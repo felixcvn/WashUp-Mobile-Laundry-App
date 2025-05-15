@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:washup/screens/auth/login_screen.dart';
-import 'package:washup/screens/profile_screen.dart';
+import 'package:washup/screens/profile/profile_screen.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -48,7 +48,7 @@ class DashboardPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text('Selamat Pagi,',
-                            style: TextStyle(fontSize: 16, color: Colors.black54)),
+                            style: TextStyle(fontSize: 16, color: Color.fromARGB(255, 255, 255, 255))),
                         Text(
                           user?.displayName ?? 'Felix',
                           style: const TextStyle(
@@ -116,7 +116,7 @@ class DashboardPage extends StatelessWidget {
                         style:
                             TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     Text('Lihat Semua',
-                        style: TextStyle(color: Colors.blueAccent)),
+                        style: TextStyle(color: Color.fromARGB(255, 255, 255, 255))),
                   ],
                 ),
 

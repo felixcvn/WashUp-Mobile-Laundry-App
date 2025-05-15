@@ -115,24 +115,37 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
-          onPressed: () => Navigator.pop(context),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.blue, // Warna biru di bagian atas
+            Colors.white, // Warna putih di bagian bawah
+          ],
         ),
-        title: const Text(
-          'Profile',
-          style: TextStyle(
-            color: Color(0xFF1E63B8),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
       ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Ubah menjadi transparan agar gradien terlihat
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+          title: const Text(
+            'Profile',
+            style: TextStyle(
+              color: Color.fromARGB(255, 255, 255, 255),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
+        ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -141,7 +154,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   children: [
                     const SizedBox(height: 20),
-                    
                     // Profile Image
                     Center(
                       child: Container(
@@ -172,9 +184,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     Text(
                       _userName,
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E63B8),
+                        color: Color.fromARGB(255, 255, 255, 255),
                       ),
                     ),
                     
@@ -255,6 +267,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ),
+      ),
     );
   }
 

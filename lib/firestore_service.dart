@@ -1,7 +1,10 @@
-// ignore_for_file: avoid_print
+// ignore_for_file: avoid_print, unused_element
+
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:washup/user_model.dart';
 
 class FirestoreService {
@@ -10,6 +13,7 @@ class FirestoreService {
 
   // Collection references
   CollectionReference get users => _firestore.collection('users');
+  CollectionReference get orders => _firestore.collection('orders');
 
   // Get current user ID
   String? get currentUserId => _auth.currentUser?.uid;
@@ -89,4 +93,68 @@ class FirestoreService {
       rethrow;
     }
   }
+
+  Future<void> addLaundryOrder({
+    required String serviceType,
+    required double weight,
+    required int price,
+    required DateTime pickupTime,
+  }) async {
+    try {
+      final uid = currentUserId;
+      if (uid == null) throw Exception('User not logged in');
+
+      await orders.add({
+        'userId': uid,
+        'serviceType': serviceType,
+        'weight': weight,
+        'price': price,
+        'pickupTime': pickupTime,
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error adding laundry order: $e');
+      rethrow;
+    }
+  }
+
+
+  // Get all orders for the current user
+  Stream<QuerySnapshot> getOrders() {
+    final uid = currentUserId;
+    if (uid == null) throw Exception('User not logged in');
+
+    return orders.where('userId', isEqualTo: uid).snapshots();
+  }
+   // Update status of an order (e.g., to 'completed', 'cancelled')
+  Future<void> updateOrderStatus(String orderId, String status) async {
+    try {
+      await orders.doc(orderId).update({'status': status});
+    } catch (e) {
+      print('Error updating order status: $e');
+      rethrow;
+    }
+  }
+
+  // Delete an order (optional)
+  Future<void> deleteOrder(String orderId) async {
+    try {
+      await orders.doc(orderId).delete();
+    } catch (e) {
+      print('Error deleting order: $e');
+      rethrow;
+    }
+  }
+
+  // Future<Widget> _getProfileImage(String uid) async {
+  // final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+  // final base64Image = userDoc.data()?['profileImage'];
+
+  // if (base64Image != null) {
+  //   final bytes = base64Decode(base64Image);
+  //   return Image.memory(bytes, fit: BoxFit.cover);
+  // } else {
+  //   return const Icon(Icons.person, size: 50); // Tampilkan ikon default jika tidak ada gambar
+  // }
 }

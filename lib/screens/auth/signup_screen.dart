@@ -1,8 +1,11 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:convert'; // Tambahkan untuk konversi Base64
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:washup/screens/auth/login_screen.dart';
 import 'package:washup/screens/auth/verify_email_screen.dart';
 
@@ -22,88 +25,110 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
+Future<void> _register() async {
+  if (!_formKey.currentState!.validate()) return;
+
+  setState(() {
+    _isLoading = true;
+  });
+
+  try {
+    final email = _emailController.text;
+    final password = _passwordController.text;
+    final name = _nameController.text;
+    final phone = _phoneController.text;
+
+    // Buat akun baru dengan Firebase Authentication
+    final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+
+    // Simpan data tambahan user ke Firestore
+    await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+      'uid': userCredential.user!.uid,
+      'name': name,
+      'phone': phone,
+      'email': email,
+      // 'profileImage': base64Image, // Simpan gambar dalam format Base64
+      'createdAt': FieldValue.serverTimestamp(),
+      'role': 'customer',
     });
 
-    try {
-      final email = _emailController.text;
-      final password = _passwordController.text;
-      final name = _nameController.text;
-      final phone = _phoneController.text;
+    // Update displayName di Firebase Auth
+    await userCredential.user!.updateDisplayName(name);
 
-      // Buat akun baru dengan Firebase Authentication
-      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      
-      await Future.delayed(Duration(milliseconds: 500));
+    // Kirim email verifikasi
+    await FirebaseAuth.instance.currentUser?.sendEmailVerification();
 
-      // Simpan data tambahan user ke Firestore
-      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-        'name': name,
-        'phone': phone,
-        'email': email,
-        'createdAt': FieldValue.serverTimestamp(),
-        'role': 'customer',
+    if (!mounted) return;
+
+    // Arahkan ke halaman verifikasi email
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => VerifyEmailPage()),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Registrasi berhasil! Cek email untuk verifikasi.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  } on FirebaseAuthException catch (e) {
+    String message = 'Terjadi kesalahan';
+    if (e.code == 'email-already-in-use') {
+      message = 'Email sudah terdaftar';
+    } else if (e.code == 'weak-password') {
+      message = 'Password terlalu lemah';
+    } else if (e.code == 'invalid-email') {
+      message = 'Format email tidak valid';
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } catch (e) {
+    // Menangkap error lain yang mungkin terjadi
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Terjadi kesalahan: ${e.toString()}'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
       });
-
-      // Update displayName di Firebase Auth
-      await userCredential.user!.updateDisplayName(name);
-
-      // Kirim email verifikasi
-      await FirebaseAuth.instance.currentUser?.sendEmailVerification();
-      
-      if (!mounted) return;
-      
-      // Arahkan ke halaman verifikasi email
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => VerifyEmailPage()),
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registrasi berhasil! Cek email untuk verifikasi.'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } on FirebaseAuthException catch (e) {
-      String message = 'Terjadi kesalahan';
-      if (e.code == 'email-already-in-use') {
-        message = 'Email sudah terdaftar';
-      } else if (e.code == 'weak-password') {
-        message = 'Password terlalu lemah';
-      } else if (e.code == 'invalid-email') {
-        message = 'Format email tidak valid';
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } catch (e) {
-      // Menangkap error lain yang mungkin terjadi
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Terjadi kesalahan: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
   }
+}
+
+  // Fixed _pickImage method
+  // Future<void> _pickImage() async {
+  //   try {
+  //     final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+      
+  //     if (pickedFile != null) {
+  //       setState(() {
+  //         _profileImage = File(pickedFile.path);
+  //       });
+  //     }
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('Gagal mengambil gambar: ${e.toString()}'),
+  //         backgroundColor: Colors.red,
+  //       ),
+  //     );
+  //   }
+  // }
 
   @override
   void dispose() {
@@ -200,6 +225,22 @@ class _RegisterPageState extends State<RegisterPage> {
                             color: Colors.blue[800],
                           ),
                         ),
+                        const SizedBox(height: 24),
+                        
+                        // Center(
+                        //   child: GestureDetector(
+                        //     onTap: _pickImage,
+                        //     child: CircleAvatar(
+                        //       radius: 50,
+                        //       backgroundColor: Colors.blue[100],
+                        //       backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+                        //       child: _profileImage == null
+                        //           ? Icon(Icons.camera_alt, size: 40, color: Colors.blue[800])
+                        //           : null,
+                        //     ),
+                        //   ),
+                        // ),
+                        
                         const SizedBox(height: 24),
                         
                         // Nama Lengkap

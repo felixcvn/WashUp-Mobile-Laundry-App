@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:washup/screens/dashboard_screen.dart';
 import 'package:washup/screens/laundry_screen.dart';
-import 'package:washup/screens/profile_screen.dart';
+import 'package:washup/screens/profile/profile_screen.dart';
 
 class MainDashboard extends StatefulWidget {
   const MainDashboard({super.key});

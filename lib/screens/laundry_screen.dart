@@ -1,8 +1,11 @@
-// ignore_for_file: unused_field
+// ignore_for_file: unused_field, use_build_context_synchronously
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:intl/intl.dart';
+import 'package:washup/screens/HistoryOrder_screen.dart';
 
 class LaundryPage extends StatefulWidget {
   const LaundryPage({super.key});
@@ -13,9 +16,10 @@ class LaundryPage extends StatefulWidget {
 
 class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  final String uid = FirebaseAuth.instance.currentUser!.uid;
   
   // Data fields
-  String _laundryType = 'Cuci Aja';
+  String _serviceType = 'Cuci Aja';
   int _quantity = 1;
   String _notes = '';
   DateTime _pickupDate = DateTime.now().add(const Duration(hours: 3));
@@ -51,7 +55,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
   }
   
   void _calculatePrice() {
-    int basePrice = _prices[_laundryType]! * _quantity;
+    int basePrice = _prices[_serviceType]! * _quantity;
     int additional = 0;
     
     if (_isPremiumService) {
@@ -67,30 +71,72 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
     });
   }
 
-  void _submitOrder() {
+  void _submitOrder() async {
     if (_formKey.currentState!.validate()) {
-      // Animate success
-      _animationController.forward().then((_) {
-        _animationController.reverse();
-      });
-      
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Pesanan berhasil ditambahkan!'),
-          backgroundColor: Colors.green.shade700,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      // Simpan data ke Firestore
+      try {
+
+        final uid = FirebaseAuth.instance.currentUser!.uid;
+
+        await FirebaseFirestore.instance.collection('orders').add({
+          'userId': uid, // G
+          'laundryType': _serviceType,
+          'quantity': _quantity,
+          'notes': _notes,
+          'pickupDate': Timestamp.fromDate(
+            DateTime(
+              _pickupDate.year,
+              _pickupDate.month,
+              _pickupDate.day,
+              _pickupTime.hour,
+              _pickupTime.minute,
+            ),
+          ),
+          'isPremium': _isPremiumService,
+          'needExpress': _needExpress,
+          'totalPrice': _totalPrice,
+          'createdAt': Timestamp.now(),
+        });
+
+        // Animasi & snackbar sukses
+        _animationController.forward().then((_) {
+          _animationController.reverse();
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Pesanan berhasil ditambahkan!'),
+            backgroundColor: Colors.green.shade700,
+          ),
+        );
+
+        // Reset form jika perlu
+        setState(() {
+          _quantity = 1;
+          _notes = '';
+          _isPremiumService = false;
+          _needExpress = false;
+          _pickupDate = DateTime.now().add(const Duration(hours: 3));
+          _pickupTime = TimeOfDay.now();
+          _serviceType = 'Cuci Aja';
+          _calculatePrice();
+        });
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menambahkan pesanan: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
     }
   }
 
   void _viewOrders() {
-    // Navigasi ke halaman daftar pesanan
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigasi ke daftar pesanan!'),
-        behavior: SnackBarBehavior.floating,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const OrderHistoryPage(), 
       ),
     );
   }
@@ -158,7 +204,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.history),
+            icon: const Icon(Icons.history, color: Colors.white),
             onPressed: _viewOrders,
             tooltip: 'Riwayat Pesanan',
           ),
@@ -229,7 +275,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
                           ),
                           const SizedBox(height: 8),
                           DropdownButtonFormField<String>(
-                            value: _laundryType,
+                            value: _serviceType,
                             isExpanded: true,
                             icon: const Icon(Icons.local_laundry_service),
                             items: const [
@@ -239,7 +285,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
                             ],
                             onChanged: (value) {
                               setState(() {
-                                _laundryType = value!;
+                                _serviceType = value!;
                                 _calculatePrice();
                               });
                             },
@@ -425,8 +471,8 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text('$_laundryType ($_quantity kg)'),
-                                    Text('Rp ${NumberFormat('#,###').format(_prices[_laundryType]! * _quantity)}'),
+                                    Text('$_serviceType ($_quantity kg)'),
+                                    Text('Rp ${NumberFormat('#,###').format(_prices[_serviceType]! * _quantity)}'),
                                   ],
                                 ),
                                 if (_isPremiumService) ...[
@@ -445,7 +491,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       const Text('Biaya Express (50%)'),
-                                      Text('Rp ${NumberFormat('#,###').format((_prices[_laundryType]! * _quantity * 0.5).round())}'),
+                                      Text('Rp ${NumberFormat('#,###').format((_prices[_serviceType]! * _quantity * 0.5).round())}'),
                                     ],
                                   ),
                                 ],
@@ -494,10 +540,11 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
                             height: 50,
                             child: OutlinedButton.icon(
                               onPressed: _viewOrders,
-                              icon: const Icon(Icons.list_alt),
+                              icon: const Icon(Icons.list_alt, color: Colors.blue),
                               label: const Text(
                                 'Lihat Daftar Pesanan',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, 
+                                color: Colors.blue),
                               ),
                               style: OutlinedButton.styleFrom(
                                 side: BorderSide(color: Colors.blue.shade700),
