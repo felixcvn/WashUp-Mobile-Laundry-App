@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:washup/screens/auth/login_screen.dart';
+import 'package:washup/screens/profile/notif_screen.dart';
 import 'package:washup/screens/profile/profile_screen.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -64,7 +65,13 @@ class DashboardPage extends StatelessWidget {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.notifications_none_rounded),
-                          onPressed: () {},
+                          onPressed: () {
+                            // Aksi ketika ikon notifikasi ditekan
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const NotificationsPage()),
+                            );
+                          },
                         ),
                         GestureDetector(
                           onTap: () {
@@ -73,8 +80,14 @@ class DashboardPage extends StatelessWidget {
                               MaterialPageRoute(builder: (context) => ProfilePage()), // Ganti dengan halaman profil Anda
                             );
                           },
-                          child: const CircleAvatar(
-                            backgroundImage: AssetImage('assets/avatar.jpg'), // ganti sesuai asset
+                          child: CircleAvatar(
+                            radius: 20, // Ukuran avatar
+                            backgroundColor: Colors.blue.shade100, // Warna latar belakang avatar
+                            child: const Icon(
+                              Icons.person, // Gunakan ikon person
+                              color: Colors.blue, // Warna ikon
+                              size: 24, // Ukuran ikon
+                            ),
                           ),
                         ),
                       ],

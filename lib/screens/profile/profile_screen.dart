@@ -26,9 +26,11 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadUserData() async {
-    setState(() {
-      _isLoading = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
     
     try {
       final User? user = _auth.currentUser;
@@ -41,22 +43,28 @@ class _ProfilePageState extends State<ProfilePage> {
             .get();
             
         if (docSnapshot.exists) {
-          setState(() {
-            _userName = docSnapshot.data()?['name'] ?? 'Pelanggan';
-          });
+          if (mounted) {
+            setState(() {
+              _userName = docSnapshot.data()?['name'] ?? 'Pelanggan';
+            });            // untuk menghindari error saat widget sudah tidak ada
+          }
         } else {
+          if (mounted) {
+            setState(() {
+              _userName = user.displayName ?? 'Pelanggan';
+            });
+          }
           // Jika data tidak ada di Firestore, gunakan displayName dari Firebase Auth
-          setState(() {
-            _userName = user.displayName ?? 'Pelanggan';
-          });
         }
       }
     } catch (e) {
       debugPrint('Error loading user data: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

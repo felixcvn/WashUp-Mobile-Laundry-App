@@ -1,11 +1,9 @@
 // ignore_for_file: deprecated_member_use
 
-import 'dart:convert'; // Tambahkan untuk konversi Base64
-import 'dart:io';
+// Tambahkan untuk konversi Base64
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:washup/screens/auth/login_screen.dart';
 import 'package:washup/screens/auth/verify_email_screen.dart';
 
@@ -225,21 +223,7 @@ Future<void> _register() async {
                             color: Colors.blue[800],
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        
-                        // Center(
-                        //   child: GestureDetector(
-                        //     onTap: _pickImage,
-                        //     child: CircleAvatar(
-                        //       radius: 50,
-                        //       backgroundColor: Colors.blue[100],
-                        //       backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
-                        //       child: _profileImage == null
-                        //           ? Icon(Icons.camera_alt, size: 40, color: Colors.blue[800])
-                        //           : null,
-                        //     ),
-                        //   ),
-                        // ),
+                        const SizedBox(height: 4),
                         
                         const SizedBox(height: 24),
                         

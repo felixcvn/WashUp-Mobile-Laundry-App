@@ -1,9 +1,10 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:washup/screens/admin/admin_dashboard_screen.dart';
 import 'package:washup/screens/auth/signup_screen.dart';
-// import 'package:washup/screens/dashboard_screen.dart';
 import 'package:washup/screens/auth/forgot_password_screen.dart';
 import 'package:washup/screens/main_dashboard.dart';
 
@@ -27,38 +28,75 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      // Login dengan Firebase Auth
+      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null && !user.emailVerified) {
+      final user = userCredential.user;
+      if (user == null) return;
+
+      // Cek verifikasi email
+      if (!user.emailVerified) {
         await FirebaseAuth.instance.signOut();
-
         if (!mounted) return;
-
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Email belum diverifikasi. Silakan cek inbox Anda.'),
             backgroundColor: Colors.orange,
           ),
         );
-      } else {
+        return;
+      }
+
+      // Cek role user di Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        await FirebaseAuth.instance.signOut();
         if (!mounted) return;
-        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data user tidak ditemukan'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final userData = userDoc.data()!;
+      print('DEBUG: User Data: $userData'); // Debug print
+
+      // Cek role dan arahkan ke halaman yang sesuai
+      if (userData['role'] == 'admin') {
+        print('DEBUG: Redirecting to Admin Dashboard'); // Debug print
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminDashboard()),
+        );
+      } else {
+        print('DEBUG: Redirecting to Main Dashboard'); // Debug print
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const MainDashboard()),
         );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login Berhasil!'),
-            backgroundColor: Colors.green,
-          ),
-        );
       }
+
+      // Tampilkan pesan selamat datang
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Selamat datang, ${userData['name']}!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
     } on FirebaseAuthException catch (e) {
       String msg = 'Login Gagal. Silakan coba lagi.';
       if (e.code == 'user-disabled') {
@@ -160,7 +198,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 24),
                   
                   // Form Fields
                   Container(

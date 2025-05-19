@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:intl/intl.dart';
 import 'package:washup/screens/HistoryOrder_screen.dart';
+import 'package:geolocator/geolocator.dart';
+
 
 class LaundryPage extends StatefulWidget {
   const LaundryPage({super.key});
@@ -17,6 +19,8 @@ class LaundryPage extends StatefulWidget {
 class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final String uid = FirebaseAuth.instance.currentUser!.uid;
+  final TextEditingController _couponController = TextEditingController();
+
   
   // Data fields
   String _serviceType = 'Cuci Aja';
@@ -27,13 +31,22 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
   bool _isPremiumService = false;
   bool _needExpress = false;
   int _totalPrice = 0;
+  String _couponCode = '';
+  double _discountPercentage = 0;
+  bool _isCouponValid = false;
   
   // Service prices
   final Map<String, int> _prices = {
-    'Cuci Aja': 7000,
-    'Cuci Setrika': 10000,
-    'Dry Cleaning': 15000,
+    'Cuci Aja': 4000,
+    'Cuci Setrika': 8000,
+    'Deep Cleaning': 15000,
   };
+
+  final Map<String, double> _validCoupons = {
+  'KUCEK99': 0.10, // 10% discount
+  'NOVEMBERSIH99': 0.20, // 20% discount
+  'SUPERCLEAN99': 0.30, // 30% discount
+};
   
   // Animation controller
   late AnimationController _animationController;
@@ -50,6 +63,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
   
   @override
   void dispose() {
+    _couponController.dispose(); 
     _animationController.dispose();
     super.dispose();
   }
@@ -65,21 +79,60 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
     if (_needExpress) {
       additional += (basePrice * 0.5).round(); // 50% tambahan untuk express
     }
+
+    int subtotal = basePrice + additional;
+
+    if (_isCouponValid) {
+      int discount = (subtotal * _discountPercentage).round();
+      subtotal -= discount;
+    }
     
     setState(() {
-      _totalPrice = basePrice + additional;
+      _totalPrice = subtotal;
+    });
+  }
+
+  void _validateCoupon(String code) {
+    setState(() {
+      if (_validCoupons.containsKey(code.toUpperCase())) {
+        _couponCode = code.toUpperCase();
+        _discountPercentage = _validCoupons[code.toUpperCase()]!;
+        _isCouponValid = true;
+        _calculatePrice(); // Recalculate price with discount
+      } else {
+        _couponCode = code;
+        _discountPercentage = 0;
+        _isCouponValid = false;
+        _calculatePrice();
+      }
     });
   }
 
   void _submitOrder() async {
     if (_formKey.currentState!.validate()) {
-      // Simpan data ke Firestore
       try {
-
         final uid = FirebaseAuth.instance.currentUser!.uid;
 
+        // ✅ Ambil lokasi pengguna
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+
+        // Default lokasi jika tidak ada izin
+        GeoPoint userLocation = const GeoPoint(0, 0);
+
+        if (permission == LocationPermission.always || permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+          final position = await Geolocator.getCurrentPosition(
+            // ignore: deprecated_member_use
+            desiredAccuracy: LocationAccuracy.high,
+          );
+          userLocation = GeoPoint(position.latitude, position.longitude);
+        }
+
+        // ✅ Simpan data ke Firestore dengan lokasi
         await FirebaseFirestore.instance.collection('orders').add({
-          'userId': uid, // G
+          'userId': uid,
           'laundryType': _serviceType,
           'quantity': _quantity,
           'notes': _notes,
@@ -96,6 +149,9 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
           'needExpress': _needExpress,
           'totalPrice': _totalPrice,
           'createdAt': Timestamp.now(),
+
+          // ✅ Simpan lokasi user
+          'userLocation': userLocation,
         });
 
         // Animasi & snackbar sukses
@@ -110,7 +166,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
           ),
         );
 
-        // Reset form jika perlu
+        // Reset form
         setState(() {
           _quantity = 1;
           _notes = '';
@@ -118,7 +174,9 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
           _needExpress = false;
           _pickupDate = DateTime.now().add(const Duration(hours: 3));
           _pickupTime = TimeOfDay.now();
+          _couponController.clear();
           _serviceType = 'Cuci Aja';
+          _isCouponValid = false;
           _calculatePrice();
         });
       } catch (e) {
@@ -131,6 +189,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
       }
     }
   }
+
 
   void _viewOrders() {
     Navigator.push(
@@ -215,7 +274,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.blue.shade700, const Color.fromARGB(255, 164, 217, 255)],
+            colors: [Colors.blue.shade700, const Color.fromARGB(255, 146, 228, 255)],
             stops: const [0.0, 0.3],
           ),
         ),
@@ -281,7 +340,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
                             items: const [
                               DropdownMenuItem(value: 'Cuci Aja', child: Text('Cuci Aja (Reguler)')),
                               DropdownMenuItem(value: 'Cuci Setrika', child: Text('Cuci Setrika (Lengkap)')),
-                              DropdownMenuItem(value: 'Dry Cleaning', child: Text('Dry Cleaning (Premium)')),
+                              DropdownMenuItem(value: 'Deep Cleaning', child: Text('Deep Cleaning (Premium)')),
                             ],
                             onChanged: (value) {
                               setState(() {
@@ -450,6 +509,43 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
                               });
                             },
                           ),
+
+                          const SizedBox(height: 16),
+
+                          const Text(
+                            'Kupon Diskon',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                          controller: _couponController, // Tambahkan ini
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.blue.shade50,
+                            hintText: 'Masukkan kode kupon',
+                            prefixIcon: const Icon(Icons.discount),
+                            suffixIcon: _isCouponValid 
+                              ? Icon(Icons.check_circle, color: Colors.green.shade700)
+                              : (_couponCode.isNotEmpty 
+                                  ? Icon(Icons.error, color: Colors.red.shade700)
+                                  : null),
+                          ),
+                          onChanged: _validateCoupon,
+                          textCapitalization: TextCapitalization.characters,
+                        ),
+                          if (_isCouponValid) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Hemat ${(_discountPercentage * 100).toInt()}% dengan kupon $_couponCode',
+                              style: TextStyle(
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                           
                           // Price summary
                           const SizedBox(height: 24),
@@ -495,7 +591,24 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
                                     ],
                                   ),
                                 ],
+                                if (_isCouponValid) ...[
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Diskon $_couponCode (${(_discountPercentage * 100).toInt()}%)',
+                                        style: TextStyle(color: Colors.green.shade700),
+                                      ),
+                                      Text(
+                                        '- Rp ${NumberFormat('#,###').format(((_prices[_serviceType]! * _quantity + (_isPremiumService ? 5000 : 0) + (_needExpress ? (_prices[_serviceType]! * _quantity * 0.5).round() : 0)) * _discountPercentage).round())}',
+                                        style: TextStyle(color: Colors.green.shade700),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                                 const Divider(height: 16),
+
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [

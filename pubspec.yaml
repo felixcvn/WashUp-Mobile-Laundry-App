@@ -41,7 +41,11 @@ dependencies:
   firebase_database: ^11.3.5
   firebase_storage: ^12.4.5
   intl: ^0.20.2
-  image_picker: ^1.0.0
+  image_picker: ^1.1.2
+  google_maps_flutter: ^2.5.0
+  flutter_polyline_points: ^2.1.0
+  geolocator: ^14.0.0
+  fl_chart: ^1.0.0
 
 dev_dependencies:
   flutter_test:
@@ -69,6 +73,8 @@ flutter:
   assets:
     - assets/promo_bg.jpg
     - assets/avatar.jpg
+    - assets/default_avatar.png
+    - assets/logo_washup.png
     - assets/animations/email_verification.json
     - assets/animations/forgot_password.json
     - assets/animations/laundry.json

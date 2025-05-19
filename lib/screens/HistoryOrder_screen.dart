@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:washup/firestore_service.dart';
+import 'package:washup/screens/detail_order_screen.dart';
 
 class OrderHistoryPage extends StatelessWidget {
   const OrderHistoryPage({super.key});
@@ -126,7 +127,15 @@ class OrderHistoryPage extends StatelessWidget {
                       const SizedBox(height: 8),
                       InkWell(
                         onTap: () {
-                          // Navigasi ke detail pesanan jika diperlukan
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OrderDetailPage(
+                                order: order,
+                                orderId: orders[index].id,
+                              ),
+                            ),
+                          );
                         },
                         child: Container(
                           width: double.infinity,

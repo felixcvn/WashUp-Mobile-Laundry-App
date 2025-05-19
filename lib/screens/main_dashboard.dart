@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:washup/screens/dashboard_screen.dart';
 import 'package:washup/screens/laundry_screen.dart';
 import 'package:washup/screens/profile/profile_screen.dart';
+import 'package:washup/screens/setting_screen.dart';
 
 class MainDashboard extends StatefulWidget {
   const MainDashboard({super.key});
@@ -18,6 +19,7 @@ class _MainDashboardState extends State<MainDashboard> {
     DashboardPage(),
     LaundryPage(),
     ProfilePage(),
+    SettingsPage(),
     // const SettingsPage(),
   ];
 
@@ -47,7 +49,7 @@ class _MainDashboardState extends State<MainDashboard> {
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
-          backgroundColor: Colors.blue.shade600, // latar biru konsisten
+          backgroundColor: Colors.blue.shade500, // latar biru konsisten
           selectedItemColor: Colors.white,
           unselectedItemColor: Colors.white70,
           type: BottomNavigationBarType.fixed,
