@@ -19,12 +19,35 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Dashboard'),
+        title: const Text('Admin Dashboard', style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,)
+          ),
         backgroundColor: Colors.blue.shade700,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _auth.signOut(),
+            icon: const Icon(Icons.logout, color: Colors.white70),
+            onPressed: () async {
+              try {
+                await _auth.signOut();
+                if (context.mounted) {
+                  // Navigate to login/auth screen and remove all previous routes
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/login', // Sesuaikan dengan route name halaman login Anda
+                    (route) => false,
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error signing out: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
           ),
         ],
       ),

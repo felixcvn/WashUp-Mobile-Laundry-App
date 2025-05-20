@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:washup/firebase_options.dart';
+import 'package:washup/screens/auth/login_screen.dart';
+import 'package:washup/services/firebase_options.dart';
 import 'package:washup/screens/profile/change_password_screen.dart';
 import 'package:washup/screens/profile/edit_profile_screen.dart';
 import 'package:washup/screens/profile/notif_screen.dart';
@@ -25,6 +26,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: const SplashScreen(),
       routes: {
+        '/login': (context) => const LoginPage(),
         '/edit-profile': (context) => const EditProfilePage(),
         '/change-password': (context) => const ChangePasswordPage(),
         '/notifications': (context) => const NotificationsPage(),

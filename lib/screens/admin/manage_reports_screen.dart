@@ -12,9 +12,24 @@ class ReportsPage extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Laporan'),
+          title: const Text('Laporan', style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          )),
           backgroundColor: Colors.blue.shade700,
+          
+          iconTheme: const IconThemeData(color: Colors.white), 
           bottom: const TabBar(
+            labelColor: Colors.white, 
+            unselectedLabelColor: Colors.white60, 
+            labelStyle: TextStyle(
+              fontWeight: FontWeight.bold, 
+            ),
+            unselectedLabelStyle: TextStyle(
+              fontWeight: FontWeight.normal, 
+            ),
+            indicatorColor: Colors.white, 
+            indicatorWeight: 3, 
             tabs: [
               Tab(text: 'Pendapatan'),
               Tab(text: 'Statistik'),
@@ -43,7 +58,16 @@ class _RevenueReport extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                const SizedBox(height: 16),
+                Text('Error: ${snapshot.error}'),
+              ],
+            ),
+          );
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -51,6 +75,24 @@ class _RevenueReport extends StatelessWidget {
         }
 
         final orders = snapshot.data!.docs;
+        
+        if (orders.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.account_balance_wallet_outlined, 
+                     size: 64, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                Text(
+                  'Belum ada pendapatan',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          );
+        }
+
         final totalRevenue = orders.fold<int>(
           0,
           (sum, order) => sum + (order.data() as Map<String, dynamic>)['totalPrice'] as int,
@@ -65,29 +107,44 @@ class _RevenueReport extends StatelessWidget {
           monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] ?? 0) + data['totalPrice'] as int;
         }
 
+        // Calculate average daily revenue
+        final firstOrderDate = (orders.last.data() as Map<String, dynamic>)['createdAt'] as Timestamp;
+        final daysSinceFirstOrder = DateTime.now()
+            .difference(firstOrderDate.toDate())
+            .inDays;
+        final averageDailyRevenue = totalRevenue / (daysSinceFirstOrder + 1);
+
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Total Revenue Card
               Card(
+                elevation: 4,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Total Pendapatan',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          Icon(Icons.payments, color: Colors.blue.shade700),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Total Pendapatan',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       Text(
                         'Rp ${NumberFormat('#,###').format(totalRevenue)}',
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: Colors.blue.shade700,
                         ),
@@ -101,7 +158,45 @@ class _RevenueReport extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
+
+              // Daily Average Card
+              Card(
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.trending_up, color: Colors.green.shade700),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Rata-rata Harian',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Rp ${NumberFormat('#,###').format(averageDailyRevenue.round())}',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
+
+              // Monthly Revenue Chart
               const Text(
                 'Pendapatan Bulanan',
                 style: TextStyle(
@@ -110,47 +205,74 @@ class _RevenueReport extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                height: 200,
-                child: BarChart(
-                  BarChartData(
-                    alignment: BarChartAlignment.spaceBetween,
-                    maxY: monthlyRevenue.values.reduce((a, b) => a > b ? a : b).toDouble(),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            return Text(
-                              monthlyRevenue.keys.elementAt(value.toInt()),
-                              style: const TextStyle(fontSize: 10),
-                            );
-                          },
+              if (monthlyRevenue.isEmpty)
+                Center(
+                  child: Text(
+                    'Belum ada data bulanan',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                )
+              else
+                Card(
+                  elevation: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: SizedBox(
+                      height: 200,
+                      child: BarChart(
+                        BarChartData(
+                          alignment: BarChartAlignment.spaceBetween,
+                          maxY: monthlyRevenue.values.reduce((a, b) => a > b ? a : b).toDouble(),
+                          titlesData: FlTitlesData(
+                            show: true,
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  return Text(
+                                    monthlyRevenue.keys.elementAt(value.toInt()),
+                                    style: const TextStyle(fontSize: 10),
+                                  );
+                                },
+                              ),
+                            ),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  return Text(
+                                    'Rp ${NumberFormat('#,###').format(value.toInt())}',
+                                    style: const TextStyle(fontSize: 10),
+                                  );
+                                },
+                                reservedSize: 80,
+                              ),
+                            ),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          barGroups: monthlyRevenue.entries
+                              .toList()
+                              .asMap()
+                              .entries
+                              .map((entry) {
+                                return BarChartGroupData(
+                                  x: entry.key,
+                                  barRods: [
+                                    BarChartRodData(
+                                      toY: entry.value.value.toDouble(),
+                                      color: Colors.blue.shade700,
+                                      width: 16,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ],
+                                );
+                              })
+                              .toList(),
                         ),
                       ),
                     ),
-                    borderData: FlBorderData(show: false),
-                    barGroups: monthlyRevenue.entries
-                        .toList()
-                        .asMap()
-                        .entries
-                        .map((entry) {
-                          return BarChartGroupData(
-                            x: entry.key,
-                            barRods: [
-                              BarChartRodData(
-                                toY: entry.value.value.toDouble(),
-                                color: Colors.blue.shade700,
-                                width: 16,
-                              ),
-                            ],
-                          );
-                        })
-                        .toList(),
                   ),
                 ),
-              ),
             ],
           ),
         );
@@ -158,6 +280,8 @@ class _RevenueReport extends StatelessWidget {
     );
   }
 }
+
+// ... existing _StatisticsReport class ...
 
 class _StatisticsReport extends StatelessWidget {
   @override

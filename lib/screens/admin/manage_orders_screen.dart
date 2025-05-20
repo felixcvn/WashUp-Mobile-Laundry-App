@@ -11,9 +11,20 @@ class ManageOrdersPage extends StatelessWidget {
       length: 4,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Kelola Pesanan'),
+          title: const Text('Kelola Pesanan', style: TextStyle(color: Colors.white)),
           backgroundColor: Colors.blue.shade700,
+          iconTheme: const IconThemeData(color: Colors.white), 
           bottom: TabBar(
+            labelColor: Colors.white, 
+            unselectedLabelColor: Colors.white60, 
+            indicatorColor: Colors.white, 
+            indicatorWeight: 3, 
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.bold, 
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.normal, 
+            ),
             tabs: [
               Tab(text: 'Pending'),
               Tab(text: 'Processing'),
@@ -96,6 +107,7 @@ class _OrderList extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _buildDetailRow('Nama Pelanggan', order['userName']),
                         _buildDetailRow('Jenis Layanan', order['laundryType']),
                         _buildDetailRow('Berat', '${order['quantity']} kg'),
                         _buildDetailRow(

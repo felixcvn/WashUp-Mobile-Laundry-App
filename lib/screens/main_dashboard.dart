@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:washup/screens/dashboard_screen.dart';
-import 'package:washup/screens/laundry_screen.dart';
+import 'package:washup/screens/customer/dashboard_screen.dart';
+import 'package:washup/screens/customer/laundry_screen.dart';
 import 'package:washup/screens/profile/profile_screen.dart';
 import 'package:washup/screens/setting_screen.dart';
 

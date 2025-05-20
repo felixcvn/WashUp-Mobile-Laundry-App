@@ -8,8 +8,12 @@ class ManageServicesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kelola Layanan'),
+        title: const Text('Kelola Layanan', style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        )),
         backgroundColor: Colors.blue.shade700,
+        iconTheme: const IconThemeData(color: Colors.white), 
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddServiceDialog(context),

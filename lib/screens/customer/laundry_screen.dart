@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:intl/intl.dart';
-import 'package:washup/screens/HistoryOrder_screen.dart';
+import 'package:washup/screens/customer/HistoryOrder_screen.dart';
 import 'package:geolocator/geolocator.dart';
 
 
@@ -20,7 +20,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
   final _formKey = GlobalKey<FormState>();
   final String uid = FirebaseAuth.instance.currentUser!.uid;
   final TextEditingController _couponController = TextEditingController();
-
+  
   
   // Data fields
   String _serviceType = 'Cuci Aja';
@@ -149,9 +149,9 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
           'needExpress': _needExpress,
           'totalPrice': _totalPrice,
           'createdAt': Timestamp.now(),
-
-          // ✅ Simpan lokasi user
           'userLocation': userLocation,
+          'status': 'pending', // Status awal
+          'userName': FirebaseAuth.instance.currentUser?.displayName ?? 'User',
         });
 
         // Animasi & snackbar sukses
@@ -260,6 +260,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
           fontWeight: FontWeight.bold,
         ),
         backgroundColor: Colors.blue.shade700,
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         actions: [
           IconButton(

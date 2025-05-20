@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:washup/firestore_service.dart';
-import 'package:washup/screens/detail_order_screen.dart';
+import 'package:washup/services/firestore_service.dart';
+import 'package:washup/screens/customer/detail_order_screen.dart';
 
 class OrderHistoryPage extends StatelessWidget {
   const OrderHistoryPage({super.key});
@@ -19,6 +19,7 @@ class OrderHistoryPage extends StatelessWidget {
           fontWeight: FontWeight.bold,
           color: Colors.white,),),
         backgroundColor: Colors.blue.shade700,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: firestoreService.getOrders(),
