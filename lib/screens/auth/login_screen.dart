@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, avoid_print
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:washup/screens/admin/admin_dashboard_screen.dart';
 import 'package:washup/screens/auth/signup_screen.dart';
 import 'package:washup/screens/auth/forgot_password_screen.dart';
+import 'package:washup/screens/courier/dashboard_kurir_screen.dart';
 import 'package:washup/screens/main_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
@@ -37,19 +38,6 @@ class _LoginPageState extends State<LoginPage> {
       final user = userCredential.user;
       if (user == null) return;
 
-      // Cek verifikasi email
-      if (!user.emailVerified) {
-        await FirebaseAuth.instance.signOut();
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Email belum diverifikasi. Silakan cek inbox Anda.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
       // Cek role user di Firestore
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
@@ -69,18 +57,37 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       final userData = userDoc.data()!;
-      print('DEBUG: User Data: $userData'); // Debug print
 
-      // Cek role dan arahkan ke halaman yang sesuai
-      if (userData['role'] == 'admin') {
-        print('DEBUG: Redirecting to Admin Dashboard'); // Debug print
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AdminDashboard()),
-        );
+      // Cek role dan verifikasi email
+      if (userData['role'] == 'admin' || userData['role'] == 'courier') {
+        // Admin dan Kurir tidak perlu verifikasi email
+        if (userData['role'] == 'admin') {
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminDashboard()),
+          );
+        } else {
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const CourierDashboard()),
+          );
+        }
       } else {
-        print('DEBUG: Redirecting to Main Dashboard'); // Debug print
+        // Customer perlu verifikasi email
+        if (!user.emailVerified) {
+          await FirebaseAuth.instance.signOut();
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Email belum diverifikasi. Silakan cek inbox Anda.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+        
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
@@ -116,7 +123,6 @@ class _LoginPageState extends State<LoginPage> {
       }
       
       if (!mounted) return;
-      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(msg),

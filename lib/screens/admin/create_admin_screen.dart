@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:washup/screens/admin/admin_service.dart';
 
 class CreateAdminScreen extends StatefulWidget {
-  const CreateAdminScreen({Key? key}) : super(key: key);
+  const CreateAdminScreen({super.key});
 
   @override
   State<CreateAdminScreen> createState() => _CreateAdminScreenState();

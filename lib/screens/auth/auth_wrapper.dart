@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:washup/screens/admin/admin_dashboard_screen.dart';
+import 'package:washup/screens/courier/dashboard_kurir_screen.dart';
 import 'package:washup/screens/main_dashboard.dart';
 import 'package:washup/screens/auth/login_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({Key? key}) : super(key: key);
+  const AuthWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +44,8 @@ class AuthWrapper extends StatelessWidget {
             // Route based on role
             if (userRole == 'admin') {
               return const AdminDashboard();
+            } else if (userRole == 'courier') {
+              return const CourierDashboard();
             }
             return const MainDashboard();
           },

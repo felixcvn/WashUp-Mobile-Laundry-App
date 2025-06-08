@@ -1,9 +1,9 @@
-// ignore_for_file: deprecated_member_use
-
-// Tambahkan untuk konversi Base64
+import 'dart:io';
+import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:washup/screens/auth/login_screen.dart';
 import 'package:washup/screens/auth/verify_email_screen.dart';
 
@@ -22,6 +22,128 @@ class _RegisterPageState extends State<RegisterPage> {
   final _phoneController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+
+  final ImagePicker _picker = ImagePicker();
+  File? _profileImage;
+  String? _profileImageUrl;
+  final cloudinary = CloudinaryPublic('washup', 'profile_washup', cache: false);
+
+void _showCustomSnackBar({
+  required String message,
+  bool isError = false,
+  IconData? icon,
+}) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      content: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isError ? Colors.red.shade600 : Colors.green.shade600,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: (isError ? Colors.red : Colors.green).withOpacity(0.2),
+              spreadRadius: 4,
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon ?? (isError ? Icons.error_outline : Icons.check_circle_outline),
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      behavior: SnackBarBehavior.floating,
+      margin: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16, // Adds padding from top of screen
+        left: 16,
+        right: 16,
+      ),
+      dismissDirection: DismissDirection.up, // Changes dismiss direction to up
+      duration: const Duration(seconds: 2),
+    ),
+  );
+}
+
+  // Tambahkan method untuk memilih dan upload gambar
+Future<void> _pickAndUploadImage() async {
+  setState(() {
+    _isLoading = true; // Show loading indicator
+  });
+
+  try {
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 500,
+      maxHeight: 500,
+      imageQuality: 75,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _profileImage = File(pickedFile.path);
+      });
+
+      // Upload ke Cloudinary
+      try {
+        final response = await cloudinary.uploadFile(
+          CloudinaryFile.fromFile(
+            _profileImage!.path,
+            resourceType: CloudinaryResourceType.Image,
+          ),
+        );
+
+        print('Cloudinary response: ${response.secureUrl}'); // Debug print
+
+        setState(() {
+          _profileImageUrl = response.secureUrl;
+          _isLoading = false;
+        });
+
+        // Show success message
+        if (mounted) {
+          _showCustomSnackBar(
+            message: 'Foto profil berhasil diunggah',
+            icon: Icons.image_outlined,
+          );
+        }
+      } catch (cloudinaryError) {
+        print('Cloudinary upload error: $cloudinaryError'); // Debug print
+        throw cloudinaryError;
+      }
+    }
+  } catch (e) {
+    setState(() {
+      _isLoading = false;
+    });     
+    
+    if (mounted) {
+      _showCustomSnackBar(
+        message: 'Error mengunggah foto: $e',
+        isError: true,
+        icon: Icons.broken_image_outlined,
+      );
+    }
+  }
+}
 
 
 Future<void> _register() async {
@@ -50,6 +172,7 @@ Future<void> _register() async {
       'name': name,
       'phone': phone,
       'email': email,
+      'profileImageUrl': _profileImageUrl, // Ganti dengan URL gambar jika ada
       // 'profileImage': base64Image, // Simpan gambar dalam format Base64
       'createdAt': FieldValue.serverTimestamp(),
       'role': 'customer',
@@ -107,26 +230,6 @@ Future<void> _register() async {
     }
   }
 }
-
-  // Fixed _pickImage method
-  // Future<void> _pickImage() async {
-  //   try {
-  //     final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-      
-  //     if (pickedFile != null) {
-  //       setState(() {
-  //         _profileImage = File(pickedFile.path);
-  //       });
-  //     }
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text('Gagal mengambil gambar: ${e.toString()}'),
-  //         backgroundColor: Colors.red,
-  //       ),
-  //     );
-  //   }
-  // }
 
   @override
   void dispose() {
@@ -225,6 +328,45 @@ Future<void> _register() async {
                         ),
                         const SizedBox(height: 4),
                         
+                        const SizedBox(height: 24),
+
+                        // Tambahkan setelah logo dan sebelum form fields
+                        Center(
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 50,
+                                backgroundColor: Colors.grey[200],
+                                backgroundImage: _profileImage != null 
+                                  ? FileImage(_profileImage!) 
+                                  : null,
+                                child: _profileImage == null
+                                  ? Icon(Icons.person, size: 50, color: Colors.grey[400])
+                                  : null,
+                              ),
+                              Positioned(
+                                bottom: -10,
+                                right: -10,
+                                child: IconButton(
+                                  icon: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue[700],
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  onPressed: _pickAndUploadImage,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
                         const SizedBox(height: 24),
                         
                         // Nama Lengkap

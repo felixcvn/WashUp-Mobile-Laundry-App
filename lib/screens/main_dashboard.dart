@@ -42,17 +42,25 @@ class _MainDashboardState extends State<MainDashboard> {
           ],
         ),
       ),
-
       child: Scaffold(
         backgroundColor: Colors.white,
         body: _pages[_selectedIndex],
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          backgroundColor: Colors.blue.shade500, // latar biru konsisten
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.white70,
-          type: BottomNavigationBarType.fixed,
+        bottomNavigationBar: Container(
+          height: 60, // Adjust this value to change the height
+          child: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            backgroundColor: Colors.white,
+            selectedItemColor: const Color.fromARGB(255, 61, 144, 215),
+            unselectedItemColor: const Color.fromARGB(255, 197, 197, 197),
+            type: BottomNavigationBarType.fixed,
+            selectedLabelStyle: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontSize: 11,
+            ),
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),
@@ -73,6 +81,7 @@ class _MainDashboardState extends State<MainDashboard> {
           ],
         ),
       )
-    );  
+    )
+  );
   }
 }

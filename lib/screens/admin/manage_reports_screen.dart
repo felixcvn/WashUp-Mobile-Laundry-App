@@ -1,10 +1,12 @@
+// ignore_for_file: avoid_types_as_parameter_names
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class ReportsPage extends StatelessWidget {
-  const ReportsPage({Key? key}) : super(key: key);
+  const ReportsPage({super.key});
 
   @override
   Widget build(BuildContext context) {

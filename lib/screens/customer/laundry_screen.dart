@@ -1,5 +1,3 @@
-// ignore_for_file: unused_field, use_build_context_synchronously
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +5,6 @@ import 'package:lottie/lottie.dart';
 import 'package:intl/intl.dart';
 import 'package:washup/screens/customer/HistoryOrder_screen.dart';
 import 'package:geolocator/geolocator.dart';
-
 
 class LaundryPage extends StatefulWidget {
   const LaundryPage({super.key});
@@ -17,10 +14,13 @@ class LaundryPage extends StatefulWidget {
 }
 
 class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStateMixin {
+  final ScrollController _scrollController = ScrollController();
+  Color _appBarColor = Colors.white;
+  Color _textColor = Colors.blue;
+  double _elevation = 0;
   final _formKey = GlobalKey<FormState>();
   final String uid = FirebaseAuth.instance.currentUser!.uid;
   final TextEditingController _couponController = TextEditingController();
-  
   
   // Data fields
   String _serviceType = 'Cuci Aja';
@@ -35,7 +35,6 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
   double _discountPercentage = 0;
   bool _isCouponValid = false;
   
-  // Service prices
   final Map<String, int> _prices = {
     'Cuci Aja': 4000,
     'Cuci Setrika': 8000,
@@ -43,17 +42,17 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
   };
 
   final Map<String, double> _validCoupons = {
-  'KUCEK99': 0.10, // 10% discount
-  'NOVEMBERSIH99': 0.20, // 20% discount
-  'SUPERCLEAN99': 0.30, // 30% discount
-};
+    'KUCEK99': 0.10,
+    'NOVEMBERSIH99': 0.20,
+    'SUPERCLEAN99': 0.30,
+  };
   
-  // Animation controller
   late AnimationController _animationController;
   
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -63,11 +62,34 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
   
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _couponController.dispose(); 
     _animationController.dispose();
     super.dispose();
   }
   
+  void _onScroll() {
+    if (_scrollController.offset > 20) {
+      if (_appBarColor != Colors.blue) {
+        setState(() {
+          _appBarColor = Colors.blue;
+          _textColor = Colors.white;
+          _elevation = 4;
+        });
+      }
+    } else {
+      if (_appBarColor != Colors.white) {
+        setState(() {
+          _appBarColor = Colors.white;
+          _textColor = Colors.blue;
+          _elevation = 0;
+        });
+      }
+    }
+  }
+
+
   void _calculatePrice() {
     int basePrice = _prices[_serviceType]! * _quantity;
     int additional = 0;
@@ -77,7 +99,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
     }
     
     if (_needExpress) {
-      additional += (basePrice * 0.5).round(); // 50% tambahan untuk express
+      additional += (basePrice * 0.5).round();
     }
 
     int subtotal = basePrice + additional;
@@ -98,7 +120,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
         _couponCode = code.toUpperCase();
         _discountPercentage = _validCoupons[code.toUpperCase()]!;
         _isCouponValid = true;
-        _calculatePrice(); // Recalculate price with discount
+        _calculatePrice();
       } else {
         _couponCode = code;
         _discountPercentage = 0;
@@ -113,24 +135,28 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
       try {
         final uid = FirebaseAuth.instance.currentUser!.uid;
 
-        // ✅ Ambil lokasi pengguna
+        final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+        final userData = userDoc.data();
+
         LocationPermission permission = await Geolocator.checkPermission();
         if (permission == LocationPermission.denied) {
           permission = await Geolocator.requestPermission();
         }
 
-        // Default lokasi jika tidak ada izin
         GeoPoint userLocation = const GeoPoint(0, 0);
 
-        if (permission == LocationPermission.always || permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+        if (permission == LocationPermission.always || 
+            permission == LocationPermission.whileInUse) {
           final position = await Geolocator.getCurrentPosition(
-            // ignore: deprecated_member_use
             desiredAccuracy: LocationAccuracy.high,
           );
           userLocation = GeoPoint(position.latitude, position.longitude);
         }
 
-        // ✅ Simpan data ke Firestore dengan lokasi
         await FirebaseFirestore.instance.collection('orders').add({
           'userId': uid,
           'laundryType': _serviceType,
@@ -150,11 +176,14 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
           'totalPrice': _totalPrice,
           'createdAt': Timestamp.now(),
           'userLocation': userLocation,
-          'status': 'pending', // Status awal
+          'deliveryPhoto': null,
+          'deliveryStatus': 'pending',
+          'status': 'pending',
+          'phone': userData?['phone'] ?? 'Unknown',
+          'userAddress': userData?['address'] ?? 'Unknown',
           'userName': FirebaseAuth.instance.currentUser?.displayName ?? 'User',
         });
 
-        // Animasi & snackbar sukses
         _animationController.forward().then((_) {
           _animationController.reverse();
         });
@@ -166,7 +195,6 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
           ),
         );
 
-        // Reset form
         setState(() {
           _quantity = 1;
           _notes = '';
@@ -190,16 +218,15 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
     }
   }
 
-
   void _viewOrders() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const OrderHistoryPage(), 
+        builder: (context) => const OrderHistoryPage(),
       ),
     );
   }
-  
+
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -210,7 +237,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
-              primary: Colors.blue.shade700,
+              primary: Colors.blue,
               onPrimary: Colors.white,
             ),
           ),
@@ -233,7 +260,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
-              primary: Colors.blue.shade700,
+              primary: Colors.blue,
               onPrimary: Colors.white,
             ),
           ),
@@ -252,40 +279,39 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: 
-        const Text('Tambah Pesanan Cucian'),
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
+        title: const Text('Tambah Pesanan Cucian'),
+        toolbarHeight: 80,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(18),
+          ),
+        ),
+        titleTextStyle: TextStyle(
+          color: _textColor,
           fontSize: 22,
           fontWeight: FontWeight.bold,
         ),
-        backgroundColor: Colors.blue.shade700,
-        iconTheme: const IconThemeData(color: Colors.white),
-        elevation: 0,
+        backgroundColor: _appBarColor,
+        iconTheme: IconThemeData(color: _textColor),
+        elevation: _elevation,
         actions: [
           IconButton(
-            icon: const Icon(Icons.history, color: Colors.white),
+            icon: Icon(Icons.history, color: _textColor),
             onPressed: _viewOrders,
             tooltip: 'Riwayat Pesanan',
           ),
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.blue.shade700, const Color.fromARGB(255, 146, 228, 255)],
-            stops: const [0.0, 0.3],
-          ),
-        ),
+        color: Colors.white,
+        child: SingleChildScrollView(
+          controller: _scrollController,
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Gambar Ilustrasi dengan animasi
                 Center(
                   child: ScaleTransition(
                     scale: Tween<double>(begin: 1.0, end: 1.1).animate(
@@ -302,10 +328,10 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
                 ),
                 const SizedBox(height: 16),
 
-                // Card untuk form
                 Card(
                   elevation: 8,
-                  shadowColor: Colors.blue.shade200,
+                  shadowColor: const Color.fromARGB(255, 143, 219, 255),
+                  color: const Color.fromARGB(255, 206, 240, 251),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -316,15 +342,12 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Header
-                          const Text(
-                            'Tambah Pesanan Cucian',
-                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
                           Text(
                             'Pilih jenis layanan dan isi detail pesanan Anda',
-                            style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade700,
+                            ),
                           ),
                           const Divider(height: 32),
                           
@@ -678,6 +701,7 @@ class _LaundryPageState extends State<LaundryPage> with SingleTickerProviderStat
           ),
         ),
       ),
+    ),
     );
   }
 }

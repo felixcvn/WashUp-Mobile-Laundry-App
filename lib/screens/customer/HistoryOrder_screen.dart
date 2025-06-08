@@ -15,6 +15,12 @@ class OrderHistoryPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 60,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(18),
+          ),
+        ),
         title: const Text('Riwayat Pesananmu', style: TextStyle(
           fontWeight: FontWeight.bold,
           color: Colors.white,),),

@@ -1,9 +1,11 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 class ManageOrdersPage extends StatelessWidget {
-  const ManageOrdersPage({Key? key}) : super(key: key);
+  const ManageOrdersPage({super.key});
 
   @override
   Widget build(BuildContext context) {

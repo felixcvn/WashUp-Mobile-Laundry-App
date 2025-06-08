@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ManageServicesPage extends StatelessWidget {
-  const ManageServicesPage({Key? key}) : super(key: key);
+  const ManageServicesPage({super.key});
 
   @override
   Widget build(BuildContext context) {

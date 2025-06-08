@@ -13,16 +13,49 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  final ScrollController _scrollController = ScrollController();
+  Color _appBarColor = Colors.blue;
+  Color _textColor = Colors.white;
+  double _elevation = 0;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
   String _userName = '';
+  String? _profileImageUrl;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _scrollController.addListener(_onScroll);
+  }
+
+    @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.offset > 20) {
+      if (_appBarColor != Colors.white) {
+        setState(() {
+          _appBarColor = Colors.white;
+          _textColor = Colors.blue;
+          _elevation = 4;
+        });
+      }
+    } else {
+      if (_appBarColor != Colors.blue) {
+        setState(() {
+          _appBarColor = Colors.blue;
+          _textColor = Colors.white;
+          _elevation = 0;
+        });
+      }
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -36,7 +69,6 @@ class _ProfilePageState extends State<ProfilePage> {
       final User? user = _auth.currentUser;
       
       if (user != null) {
-        // Mencoba mendapatkan data user dari Firestore
         final docSnapshot = await _firestore
             .collection('users')
             .doc(user.uid)
@@ -46,15 +78,17 @@ class _ProfilePageState extends State<ProfilePage> {
           if (mounted) {
             setState(() {
               _userName = docSnapshot.data()?['name'] ?? 'Pelanggan';
-            });            // untuk menghindari error saat widget sudah tidak ada
+              _profileImageUrl = docSnapshot.data()?['profileImageUrl'];
+              debugPrint('Profile URL: $_profileImageUrl'); // Debug print
+            });
           }
         } else {
           if (mounted) {
             setState(() {
               _userName = user.displayName ?? 'Pelanggan';
+              _profileImageUrl = user.photoURL;
             });
           }
-          // Jika data tidak ada di Firestore, gunakan displayName dari Firebase Auth
         }
       }
     } catch (e) {
@@ -72,22 +106,10 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       await _auth.signOut();
       if (mounted) {
-        // Cara yang lebih aman untuk navigasi ke halaman login
-        // Gunakan pushReplacement daripada pushNamedAndRemoveUntil
-        // Ini akan mengganti halaman saat ini dengan halaman login
-        // tanpa harus mencari route spesifik dalam tabel routes
-        
-        // Jika menggunakan MaterialApp.router atau Navigator 2.0
-        // Akan lebih baik menggunakan GoRouter atau cara navigasi lain yang tersedia
-        
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => LoginPage()),
         );
-        
-        // Sebagai alternatif, jika route '/login' memang tidak terdaftar di routes table,
-        // Gunakan pop untuk kembali ke halaman sebelumnya yang mungkin halaman welcome/login
-        // Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
@@ -123,84 +145,47 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.blue, // Warna biru di bagian atas
-            Colors.white, // Warna putih di bagian bawah
-          ],
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: _appBarColor,
+        elevation: _elevation,
+        toolbarHeight: 60,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(18),
+          ),
         ),
+        title: Text(
+          'Profile',
+          style: TextStyle(
+            color: _textColor,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
       ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent, // Ubah menjadi transparan agar gradien terlihat
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-          title: const Text(
-            'Profile',
-            style: TextStyle(
-              color: Color.fromARGB(255, 255, 255, 255),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          centerTitle: true,
-        ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
+              controller: _scrollController,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
                   children: [
-                    const SizedBox(height: 20),
-                    // Profile Image
-                    Center(
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFF1E63B8),
-                            width: 2,
-                          ),
-                        ),
-                        child: CircleAvatar(
-                          radius: 48,
-                          backgroundColor: Colors.blue[100],
-                          child: const Icon(
-                            Icons.person,
-                            size: 60,
-                            color: Color(0xFF1E63B8),
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // User Name
+                    const SizedBox(height: 40),
+                    _buildProfileImage(),
+                    const SizedBox(height: 24),
                     Text(
                       _userName,
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color.fromARGB(255, 255, 255, 255),
+                        color: Colors.blue, // Changed to blue
                       ),
                     ),
-                    
                     const SizedBox(height: 2),
-                    
-                    // User Role
                     Text(
                       'Customer',
                       style: TextStyle(
@@ -208,10 +193,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         color: Colors.grey[600],
                       ),
                     ),
-                    
                     const SizedBox(height: 32),
                     
-                    // Profile Options
+                    // Updated Profile Options with light blue background
                     _buildProfileOption(
                       icon: Icons.edit,
                       title: 'Edit Profile',
@@ -219,9 +203,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         Navigator.pushNamed(context, '/edit-profile');
                       },
                     ),
-                    
                     const SizedBox(height: 12),
-                    
                     _buildProfileOption(
                       icon: Icons.notifications,
                       title: 'Notification',
@@ -229,9 +211,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         Navigator.pushNamed(context, '/notifications');
                       },
                     ),
-                    
                     const SizedBox(height: 12),
-                    
                     _buildProfileOption(
                       icon: Icons.lock,
                       title: 'Change Password',
@@ -239,7 +219,6 @@ class _ProfilePageState extends State<ProfilePage> {
                         Navigator.pushNamed(context, '/change-password');
                       },
                     ),
-                    
                     const SizedBox(height: 40),
                     
                     // Logout Button
@@ -275,6 +254,60 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ),
+      );
+  }
+
+  Widget _buildProfileImage() {
+    return Center(
+      child: Stack(
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: const Color(0xFF1E63B8),
+                width: 2,
+              ),
+            ),
+            child: ClipOval(
+              child: _profileImageUrl != null
+                  ? Image.network(
+                      _profileImageUrl!,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        debugPrint('Error loading image: $error');
+                        return const Icon(
+                          Icons.person,
+                          size: 60,
+                          color: Color(0xFF1E63B8),
+                        );
+                      },
+                    )
+                  : CircleAvatar(
+                      radius: 48,
+                      backgroundColor: Colors.blue[100],
+                      child: const Icon(
+                        Icons.person,
+                        size: 60,
+                        color: Color(0xFF1E63B8),
+                      ),
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -286,8 +319,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.blue.shade50, // Changed to light blue
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
@@ -299,26 +332,26 @@ class _ProfilePageState extends State<ProfilePage> {
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(
-            color: Color(0xFF1E63B8),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade100, // Lighter blue for icon background
             shape: BoxShape.circle,
           ),
           child: Icon(
             icon,
-            color: Colors.white,
+            color: Colors.blue, // Blue icon
             size: 20,
           ),
         ),
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w500,
-            color: Color(0xFF1E63B8),
+            color: Colors.blue.shade700, // Darker blue for text
           ),
         ),
-        trailing: const Icon(
+        trailing: Icon(
           Icons.chevron_right,
-          color: Color(0xFF1E63B8),
+          color: Colors.blue.shade700,
         ),
         onTap: onTap,
       ),
