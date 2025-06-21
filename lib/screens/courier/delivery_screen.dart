@@ -429,10 +429,10 @@ class SlideToCompleteButton extends StatefulWidget {
   final bool isLoading;
 
   const SlideToCompleteButton({
-    Key? key,
+    super.key,
     this.onSlideComplete,
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   @override
   State<SlideToCompleteButton> createState() => _SlideToCompleteButtonState();

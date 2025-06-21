@@ -162,34 +162,12 @@ class _LoginPageState extends State<LoginPage> {
                   Center(
                     child: Column(
                       children: [
-                        Container(
-                          height: 120,
-                          width: 120,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.blue.withOpacity(0.2),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.local_laundry_service,
-                            size: 80,
-                            color: Colors.blue[700],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'WashUp',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[800],
+                        SizedBox(
+                          height: 170, // Adjust this value
+                          width: 170,
+                          child: Image.asset(
+                            'assets/logo_washup_2.png',
+                            fit: BoxFit.contain,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -246,6 +224,17 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             filled: true,
                             fillColor: Colors.grey[50],
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
+                            ),
+                            focusColor: Colors.blue.shade700,
+                            labelStyle: TextStyle(color: Colors.grey[700]),
+                            // When focused, label and icon will be blue
+                            floatingLabelStyle: TextStyle(color: Colors.blue[700]),
+                            prefixIconColor: MaterialStateColor.resolveWith((states) => 
+                              states.contains(MaterialState.focused) ? Colors.blue.shade700 : Colors.grey.shade600,
+                            ),
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -283,12 +272,22 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             filled: true,
                             fillColor: Colors.grey[50],
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
+                            ),
+                            focusColor: Colors.blue.shade700,
+                            labelStyle: TextStyle(color: Colors.grey[700]),
+                            // When focused, label and icon will be blue
+                            floatingLabelStyle: TextStyle(color: Colors.blue[700]),
+                            prefixIconColor: MaterialStateColor.resolveWith((states) => 
+                              states.contains(MaterialState.focused) ? Colors.blue.shade700 : Colors.grey.shade600,
+                            ),
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Password tidak boleh kosong';
                             }
-                            return null;
                           },
                         ),
                         

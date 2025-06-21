@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     return Transform.scale(
                       scale: value,
                       child: Image.asset(
-                        'assets/logo_washup.png',
+                        'assets/logo_washup_2.png',
                         width: 200,
                         height: 200,
                       ),
@@ -87,7 +87,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   },
                 ),
                 
-                const SizedBox(height: 40),
+                const SizedBox(height: 10),
                 
                 SlideTransition(
                   position: Tween<Offset>(
@@ -97,18 +97,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     parent: _animationController,
                     curve: Curves.easeOut,
                   )),
-                  child: const Text(
-                    "WashUp",
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
                 ),
                 
-                const SizedBox(height: 16),
+                // const SizedBox(height: 16),
                 
                 // Tagline dengan fade in
                 FadeTransition(
@@ -136,7 +127,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   width: 40,
                   height: 40,
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade700),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
                     strokeWidth: 3,
                   ),
                 ),

@@ -35,12 +35,7 @@ class CourierDashboard extends StatelessWidget {
           actions: [
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.white60),
-              onPressed: () async {
-                await FirebaseAuth.instance.signOut();
-                if (context.mounted) {
-                  Navigator.of(context).pushReplacementNamed('/login');
-                }
-              },
+              onPressed: () => _showLogoutDialog(context),
             ),
           ],
         ),
@@ -54,6 +49,37 @@ class CourierDashboard extends StatelessWidget {
     );
   }
 }
+
+void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Konfirmasi Logout'),
+          content: const Text('Apakah Anda yakin ingin keluar?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+                if (context.mounted) {
+                  Navigator.of(context).pop(); // Close dialog
+                  Navigator.of(context).pushReplacementNamed('/login');
+                }
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
 class _DeliveryHistoryTab extends StatelessWidget {
   @override
@@ -111,7 +137,7 @@ class _DeliveryHistoryTab extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Pelanggan: ${order['userName'] ?? 'Tidak ada nama'}'),
-                    Text('Alamat: ${order['address'] ?? 'Tidak ada alamat'}'),
+                    Text('Alamat: ${order['userAddress'] ?? 'Tidak ada alamat'}'),
                     if (createdAt != null)
                       Text(
                         'Dikirim pada: ${_formatDate(createdAt)}',
@@ -231,6 +257,7 @@ class _NewDeliveriesTab extends StatelessWidget {
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}';
   }
+
 
   void _startDelivery(BuildContext context, String orderId, Map<String, dynamic> order) {
     Navigator.of(context).push(

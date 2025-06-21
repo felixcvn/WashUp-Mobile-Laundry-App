@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:washup/screens/customer/dashboard_screen.dart';
 import 'package:washup/screens/customer/laundry_screen.dart';
@@ -13,6 +14,12 @@ class MainDashboard extends StatefulWidget {
 
 class _MainDashboardState extends State<MainDashboard> {
   int _selectedIndex = 0;
+  
+  @override
+  void initState() {
+    super.initState();
+    _setupNotificationHandlers();
+  }
 
   // Daftar halaman yang akan ditampilkan di setiap tab
   final List<Widget> _pages = [
@@ -22,6 +29,52 @@ class _MainDashboardState extends State<MainDashboard> {
     SettingsPage(),
     // const SettingsPage(),
   ];
+
+  void _setupNotificationHandlers() {
+    // Handle foreground messages
+    FirebaseMessaging.onMessage.listen(_handleMessage);
+
+    // Handle when app is opened from notification
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
+
+    // Check if app was opened from terminated state
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      if (message != null) {
+        _handleMessage(message);
+      }
+    });
+  }
+
+  void _handleMessage(RemoteMessage message) {
+    final route = message.data['route'];
+    final orderId = message.data['orderId'];
+
+    if (route != null) {
+      switch (route) {
+        case '/admin/orders':
+          Navigator.pushNamed(
+            context, 
+            '/admin/orders',
+            arguments: orderId,
+          );
+          break;
+        case '/courier/deliveries':
+          Navigator.pushNamed(
+            context, 
+            '/courier/deliveries',
+            arguments: orderId,
+          );
+          break;
+        case '/orders':
+          Navigator.pushNamed(
+            context, 
+            '/orders',
+            arguments: orderId,
+          );
+          break;
+      }
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -45,7 +98,7 @@ class _MainDashboardState extends State<MainDashboard> {
       child: Scaffold(
         backgroundColor: Colors.white,
         body: _pages[_selectedIndex],
-        bottomNavigationBar: Container(
+        bottomNavigationBar: SizedBox(
           height: 60, // Adjust this value to change the height
           child: BottomNavigationBar(
             currentIndex: _selectedIndex,
