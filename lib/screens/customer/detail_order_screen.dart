@@ -1,9 +1,16 @@
 // ignore_for_file: deprecated_member_use
-
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:washup/screens/midtrans_payment_screen.dart';
+
+final user = FirebaseAuth.instance.currentUser;
+final email = user?.email ?? '';
+final name = user?.displayName ?? '';
 
 class OrderDetailPage extends StatefulWidget {
   final Map<String, dynamic> order;
@@ -76,6 +83,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   Widget build(BuildContext context) {
     final pickupDate = (widget.order['pickupDate'] as Timestamp).toDate();
     final createdAt = (widget.order['createdAt'] as Timestamp).toDate();
+    final status = (widget.order['status'] ?? '').toString().toLowerCase();
+    final hasNotes = widget.order['notes']?.isNotEmpty ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -90,7 +99,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
           children: [
             // Map Section
             Container(
-              height: MediaQuery.of(context).size.height * 0.6, // Mengubah height menjadi 60% dari tinggi layar,
+              height: MediaQuery.of(context).size.height * 0.6,
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
@@ -287,9 +296,9 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            _buildDetailRow('Waktu Pengambilan', 
+                            _buildDetailRow('Waktu Pengambilan',
                               DateFormat('dd MMM yyyy HH:mm').format(pickupDate)),
-                            _buildDetailRow('Dibuat pada', 
+                            _buildDetailRow('Dibuat pada',
                               DateFormat('dd MMM yyyy HH:mm').format(createdAt)),
                           ],
                         ),
@@ -321,7 +330,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            _buildDetailRow('Total Harga', 
+                            _buildDetailRow('Total Harga',
                               'Rp ${NumberFormat('#,###').format(widget.order['totalPrice'])}'),
                           ],
                         ),
@@ -329,7 +338,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                       const SizedBox(height: 24),
 
                       // Notes Section (if exists)
-                      if (widget.order['notes']?.isNotEmpty ?? false)
+                      if (hasNotes)
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -362,6 +371,52 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+
+                      // Payment Button (only if status == processing)
+                      if (status == 'processing')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 24.0),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.payment),
+                              label: const Text('Bayar Sekarang'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () async {
+                                // Ganti URL di bawah dengan URL backend kamu
+                                final response = await http.post(
+                                  Uri.parse('http://192.168.1.8:3000/get-snap-token'),
+                                  headers: {'Content-Type': 'application/json'},
+                                  body: jsonEncode({
+                                    'order_id': widget.orderId,
+                                    'amount': widget.order['totalPrice'],
+                                    'name': name, // bisa ambil dari user login
+                                    'email': email,
+                                  }),
+                                );
+                                final snapToken = jsonDecode(response.body)['token'];
+                                final snapUrl = 'https://app.sandbox.midtrans.com/snap/v2/vtweb/$snapToken';
+
+                                if (context.mounted) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => MidtransPaymentScreen(snapUrl: snapUrl),
+                                    ),
+                                  );
+                                }
+                              }
+                            ),
                           ),
                         ),
                     ],

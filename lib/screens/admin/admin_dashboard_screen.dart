@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+// import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:washup/main.dart';
 import 'package:washup/screens/admin/manage_orders_screen.dart';
 import 'package:washup/screens/admin/manage_reports_screen.dart';
@@ -22,23 +22,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   StreamSubscription? _orderSubscription;
 
-  @override
-  void initState() {
-    super.initState();
-    _orderSubscription = FirebaseFirestore.instance
-      .collection('orders')
-      .snapshots()
-      .listen((snapshot) {
-        for (var change in snapshot.docChanges) {
-          if (change.type == DocumentChangeType.added) {
-            showLocalNotification(
-              title: 'Pesanan Baru Masuk',
-              body: 'Ada pesanan baru dari ${change.doc['userName']}',
-            );
-          }
-        }
-      });
-  }
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _orderSubscription = FirebaseFirestore.instance
+  //     .collection('orders')
+  //     .snapshots()
+  //     .listen((snapshot) {
+  //       for (var change in snapshot.docChanges) {
+  //         if (change.type == DocumentChangeType.added) {
+  //           showLocalNotification(
+  //             title: 'Pesanan Baru Masuk',
+  //             body: 'Ada pesanan baru dari ${change.doc['userName']}',
+  //           );
+  //         }
+  //       }
+  //     });
+  // }
 
 
   @override
@@ -47,28 +47,28 @@ class _AdminDashboardState extends State<AdminDashboard> {
     super.dispose();
   }
 
-  Future<void> showLocalNotification({
-    required String title,
-    required String body,
-  }) async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      'washup_channel', // channel id
-      'WashUp Notifications', // channel name
-      channelDescription: 'Notifikasi aplikasi WashUp',
-      importance: Importance.max,
-      priority: Priority.high,
-    );
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
+  // Future<void> showLocalNotification({
+  //   required String title,
+  //   required String body,
+  // }) async {
+  //   const AndroidNotificationDetails androidPlatformChannelSpecifics =
+  //       AndroidNotificationDetails(
+  //     'washup_channel', // channel id
+  //     'WashUp Notifications', // channel name
+  //     channelDescription: 'Notifikasi aplikasi WashUp',
+  //     importance: Importance.max,
+  //     priority: Priority.high,
+  //   );
+  //   const NotificationDetails platformChannelSpecifics =
+  //       NotificationDetails(android: androidPlatformChannelSpecifics);
 
-    await flutterLocalNotificationsPlugin.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000, // unique id
-      title,
-      body,
-      platformChannelSpecifics,
-    );
-  }
+  //   await flutterLocalNotificationsPlugin.show(
+  //     DateTime.now().millisecondsSinceEpoch ~/ 1000, // unique id
+  //     title,
+  //     body,
+  //     platformChannelSpecifics,
+  //   );
+  // }
 
 
   @override
